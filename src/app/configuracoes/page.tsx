@@ -60,14 +60,12 @@ function ToggleRow({
       </div>
       <button
         onClick={() => onChange(!checked)}
-        className={`relative w-10 h-6 rounded-full transition-colors ${
-          checked ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"
-        }`}
+        className={`relative w-10 h-6 rounded-full transition-colors ${checked ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"
+          }`}
       >
         <span
-          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-            checked ? "translate-x-4" : "translate-x-0"
-          }`}
+          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${checked ? "translate-x-4" : "translate-x-0"
+            }`}
         />
       </button>
     </div>
@@ -97,10 +95,10 @@ export default function ConfiguracoesPage() {
             </div>
             <div>
               <p className="font-semibold text-gray-900 dark:text-white">
-                João Silva
+                Amanda
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                joao@rh.gov.br
+                amanda.kawauchi@sbcdsaude.org.br
               </p>
               <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full">
                 Administrador
@@ -113,7 +111,7 @@ export default function ConfiguracoesPage() {
                 Nome completo
               </label>
               <input
-                defaultValue="João Silva"
+                defaultValue="Amanda"
                 className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -122,7 +120,7 @@ export default function ConfiguracoesPage() {
                 Email
               </label>
               <input
-                defaultValue="joao@rh.gov.br"
+                defaultValue="amanda.kawauchi@sbcdsaude.org.br"
                 type="email"
                 className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -142,11 +140,10 @@ export default function ConfiguracoesPage() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => theme === "dark" && toggleTheme()}
-                className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all ${
-                  theme === "light"
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
-                }`}
+                className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all ${theme === "light"
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                  }`}
               >
                 <Sun className="w-4 h-4 text-yellow-500" />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -155,11 +152,10 @@ export default function ConfiguracoesPage() {
               </button>
               <button
                 onClick={() => theme === "light" && toggleTheme()}
-                className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all ${
-                  theme === "dark"
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
-                }`}
+                className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all ${theme === "dark"
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300"
+                  }`}
               >
                 <Moon className="w-4 h-4 text-blue-400" />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -176,25 +172,25 @@ export default function ConfiguracoesPage() {
             label="Notificações por Email"
             description="Receber alertas de alterações importantes por email"
             checked={true}
-            onChange={() => {}}
+            onChange={() => { }}
           />
           <ToggleRow
-            label="Alertas de Manutenção"
-            description="Ser notificado quando projetos entrarem em manutenção"
+            label="Alertas de Construção"
+            description="Ser notificado quando projetos entrarem em Construção"
             checked={true}
-            onChange={() => {}}
+            onChange={() => { }}
           />
           <ToggleRow
             label="Novos Projetos"
             description="Alertas quando novos projetos forem criados"
             checked={false}
-            onChange={() => {}}
+            onChange={() => { }}
           />
           <ToggleRow
             label="Relatórios Semanais"
             description="Resumo semanal de atividades em todos os projetos"
             checked={true}
-            onChange={() => {}}
+            onChange={() => { }}
           />
         </Section>
 
@@ -205,13 +201,13 @@ export default function ConfiguracoesPage() {
               label="Autenticação de Dois Fatores"
               description="Adiciona camada extra de segurança ao login"
               checked={false}
-              onChange={() => {}}
+              onChange={() => { }}
             />
             <ToggleRow
               label="Sessões Ativas"
               description="Listar e encerrar sessões em outros dispositivos"
               checked={true}
-              onChange={() => {}}
+              onChange={() => { }}
             />
           </div>
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">

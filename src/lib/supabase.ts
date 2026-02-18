@@ -10,7 +10,7 @@ export type Projeto = {
   nome: string;
   setor: string | null;
   descricao: string | null;
-  status: "ativo" | "manutencao" | "inativo";
+  status: "ativo" | "construcao" | "inativo";
   versao: string | null;
   url_base: string | null;
   logo_url: string | null;

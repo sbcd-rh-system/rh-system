@@ -14,9 +14,9 @@ export default function SuportePage() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { icon: Mail, title: "Email", desc: "suporte@rh.gov.br", sub: "Resposta em até 24h" },
-          { icon: Phone, title: "Telefone", desc: "(11) 3000-0000", sub: "Seg-Sex, 8h–18h" },
-          { icon: MessageSquare, title: "Chat Online", desc: "Chat ao vivo", sub: "Disponível agora" },
+          { icon: Mail, title: "Email", desc: "dados.rh@sbcdsaude.org.br"},
+//          { icon: Phone, title: "Telefone", desc: "(11) 3000-0000", sub: "Seg-Sex, 8h–18h" },
+//          { icon: MessageSquare, title: "Chat Online", desc: "Chat ao vivo", sub: "Disponível agora" },
         ].map(({ icon: Icon, title, desc, sub }) => (
           <div
             key={title}

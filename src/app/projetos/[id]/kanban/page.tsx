@@ -40,13 +40,13 @@ function SkeletonKanban() {
 
 const STATUS_COLORS: Record<string, string> = {
   ativo: "bg-green-500",
-  manutencao: "bg-yellow-400",
+  construcao: "bg-yellow-400",
   inativo: "bg-gray-400",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   ativo: "Ativo",
-  manutencao: "Em Manutenção",
+  construcao: "Em Construção",
   inativo: "Inativo",
 };
 

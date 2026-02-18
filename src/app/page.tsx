@@ -34,7 +34,7 @@ const SETORES = [
 const STATUS_OPTIONS = [
   { value: "todos", label: "Todos" },
   { value: "ativo", label: "Ativos" },
-  { value: "manutencao", label: "Em Manutenção" },
+  { value: "construcao", label: "Em Construção" },
   { value: "inativo", label: "Inativos" },
 ];
 
@@ -155,7 +155,7 @@ export default function DashboardPage() {
   const stats = {
     total: projetos.length,
     ativos: projetos.filter((p) => p.status === "ativo").length,
-    manutencao: projetos.filter((p) => p.status === "manutencao").length,
+    construcao: projetos.filter((p) => p.status === "construcao").length,
     inativos: projetos.filter((p) => p.status === "inativo").length,
   };
 
@@ -164,7 +164,7 @@ export default function DashboardPage() {
       {/* Greeting */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Bem-vindo, João!
+          Bem-vindo, Amanda!
         </h2>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
           Você administra {stats.total} projeto{stats.total !== 1 ? "s" : ""} no sistema.
@@ -187,8 +187,8 @@ export default function DashboardPage() {
         />
         <StatCard
           icon={AlertTriangle}
-          value={stats.manutencao}
-          label="Em Manutenção"
+          value={stats.construcao}
+          label="Em Construção"
           color="bg-yellow-500"
         />
         <StatCard

@@ -71,7 +71,7 @@ export function Header({ sidebarCollapsed, onToggleSidebar }: HeaderProps) {
           </div>
           <div className="hidden md:block text-left">
             <p className="text-sm font-medium text-gray-900 dark:text-white leading-tight">
-              João Silva
+              Amanda
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
               Administrador
@@ -89,10 +89,10 @@ export function Header({ sidebarCollapsed, onToggleSidebar }: HeaderProps) {
             <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-20 overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  João Silva
+                  Amanda
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  joao@rh.gov.br
+                  amanda.kawauchi@sbcdsaude.org.br
                 </p>
               </div>
               <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">

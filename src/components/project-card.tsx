@@ -13,6 +13,8 @@ import {
   Clock,
   Tag,
   Kanban,
+  Github,
+  Loader2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -43,6 +45,7 @@ export function ProjectCard({
   onToggleStatus,
 }: ProjectCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const router = useRouter();
 
   const icon = SECTOR_ICONS[projeto.setor ?? ""] ?? "📁";
@@ -50,6 +53,38 @@ export function ProjectCard({
     addSuffix: true,
     locale: ptBR,
   });
+
+  const handleSyncGitHub = async () => {
+    if (!projeto.url_base) {
+      alert("Este projeto não tem uma URL base configurada");
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      const res = await fetch(`/api/projetos/${projeto.id}/sync-github`, {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(`Erro: ${error.error}`);
+        return;
+      }
+
+      const result = await res.json();
+      alert("Sincronizado com sucesso!");
+
+      // Atualizar a página para refletir a nova data
+      window.location.reload();
+    } catch (err) {
+      console.error("Erro ao sincronizar:", err);
+      alert("Erro ao sincronizar com GitHub");
+    } finally {
+      setSyncing(false);
+      setMenuOpen(false);
+    }
+  };
 
   return (
     <div
@@ -65,9 +100,9 @@ export function ProjectCard({
           "h-1 w-full",
           projeto.status === "ativo"
             ? "bg-green-500"
-            : projeto.status === "manutencao"
-            ? "bg-yellow-400"
-            : "bg-gray-300 dark:bg-gray-600"
+            : projeto.status === "construcao"
+              ? "bg-yellow-400"
+              : "bg-gray-300 dark:bg-gray-600"
         )}
       />
 
@@ -103,41 +138,58 @@ export function ProjectCard({
                   className="fixed inset-0 z-10"
                   onClick={() => setMenuOpen(false)}
                 />
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-20 overflow-hidden py-1">
-                    {projeto.url_base && (
-                      <a
-                        href={projeto.url_base}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <ExternalLink className="w-4 h-4" /> Acessar projeto
-                      </a>
-                    )}
-                    <button
-                      onClick={() => {
-                        router.push(`/projetos/${projeto.id}/kanban`);
-                        setMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-20 overflow-hidden py-1">
+                  {projeto.url_base && (
+                    <a
+                      href={projeto.url_base}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                      <Kanban className="w-4 h-4" /> Ver Kanban
-                    </button>
-                    <button
-                      onClick={() => {
-                        onEdit(projeto);
-                        setMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <Edit2 className="w-4 h-4" /> Editar informações
-                    </button>
+                      <ExternalLink className="w-4 h-4" /> Acessar projeto
+                    </a>
+                  )}
+                  <button
+                    onClick={() => {
+                      router.push(`/projetos/${projeto.id}/kanban`);
+                      setMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <Kanban className="w-4 h-4" /> Ver Kanban
+                  </button>
+                  <button
+                    onClick={() => {
+                      onEdit(projeto);
+                      setMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <Edit2 className="w-4 h-4" /> Editar informações
+                  </button>
                   <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <History className="w-4 h-4" /> Ver histórico
                   </button>
                   <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <Download className="w-4 h-4" /> Exportar dados
                   </button>
+                  {projeto.url_base && (
+                    <>
+                      <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                      <button
+                        onClick={handleSyncGitHub}
+                        disabled={syncing}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50"
+                      >
+                        {syncing ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Github className="w-4 h-4" />
+                        )}
+                        {syncing ? "Sincronizando..." : "Sincronizar com GitHub"}
+                      </button>
+                    </>
+                  )}
                   <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
                   <button
                     onClick={() => {
