@@ -11,8 +11,16 @@ import {
   Flag,
   Lightbulb,
   Loader2,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 export type KanbanCard = {
   id: string;
@@ -22,6 +30,7 @@ export type KanbanCard = {
   descricao: string | null;
   cor: string;
   prioridade: string;
+  categoria: string;
   posicao: number;
   data_criacao: string;
   data_atualizacao: string;
@@ -82,13 +91,24 @@ const PRIORITY_LABELS: Record<string, { label: string; class: string }> = {
   urgente: { label: "Urgente", class: "text-red-600 bg-red-50 dark:bg-red-900/30" },
 };
 
+const CATEGORY_LABELS: Record<string, { label: string; class: string }> = {
+  critico: { label: "🔴 Crítico", class: "text-red-700 bg-red-100 dark:bg-red-900/40 dark:text-red-300" },
+  manutencao: { label: "🔧 Manutenção", class: "text-amber-700 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300" },
+  bug: { label: "🐛 Bug", class: "text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-300" },
+  desenvolvimento: { label: "💻 Desenvolvimento", class: "text-blue-700 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300" },
+  ideia: { label: "💡 Ideia", class: "text-purple-700 bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300" },
+  sugestao: { label: "💬 Sugestão", class: "text-indigo-700 bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300" },
+  documentacao: { label: "📚 Documentação", class: "text-cyan-700 bg-cyan-100 dark:bg-cyan-900/40 dark:text-cyan-300" },
+  melhoraria: { label: "⚡ Melhoria", class: "text-lime-700 bg-lime-100 dark:bg-lime-900/40 dark:text-lime-300" },
+};
+
 function getCardColorClass(cor: string) {
   return CARD_COLORS.find((c) => c.value === cor)?.class ?? CARD_COLORS[0].class;
 }
 
 interface CardFormProps {
   initial?: Partial<KanbanCard>;
-  onSave: (data: { titulo: string; descricao: string; cor: string; prioridade: string }) => void;
+  onSave: (data: { titulo: string; descricao: string; cor: string; prioridade: string; categoria: string }) => Promise<void> | void;
   onCancel: () => void;
   saving?: boolean;
 }
@@ -98,6 +118,12 @@ function CardForm({ initial, onSave, onCancel, saving }: CardFormProps) {
   const [descricao, setDescricao] = useState(initial?.descricao ?? "");
   const [cor, setCor] = useState(initial?.cor ?? "blue");
   const [prioridade, setPrioridade] = useState(initial?.prioridade ?? "media");
+  const [categoria, setCategoria] = useState(initial?.categoria ?? "desenvolvimento");
+
+  const handleSubmit = async () => {
+    if (!titulo.trim()) return;
+    await Promise.resolve(onSave({ titulo, descricao, cor, prioridade, categoria }));
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 shadow-md space-y-2.5">
@@ -145,9 +171,19 @@ function CardForm({ initial, onSave, onCancel, saving }: CardFormProps) {
           <option key={k} value={k}>{v.label}</option>
         ))}
       </select>
+      {/* Category */}
+      <select
+        value={categoria}
+        onChange={(e) => setCategoria(e.target.value)}
+        className="w-full text-xs px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+      >
+        {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
+          <option key={k} value={k}>{v.label}</option>
+        ))}
+      </select>
       <div className="flex gap-2 pt-1">
         <button
-          onClick={() => titulo.trim() && onSave({ titulo, descricao, cor, prioridade })}
+          onClick={handleSubmit}
           disabled={!titulo.trim() || saving}
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
         >
@@ -165,37 +201,157 @@ function CardForm({ initial, onSave, onCancel, saving }: CardFormProps) {
   );
 }
 
+interface CardViewModalProps {
+  card: KanbanCard | null;
+  onClose: () => void;
+}
+
+function CardViewModal({ card, onClose }: CardViewModalProps) {
+  if (!card) return null;
+
+  const priority = PRIORITY_LABELS[card.prioridade] ?? PRIORITY_LABELS.media;
+  const category = CATEGORY_LABELS[card.categoria] ?? CATEGORY_LABELS.desenvolvimento;
+  const cardColor = CARD_COLORS.find((c) => c.value === card.cor) ?? CARD_COLORS[0];
+
+  return (
+    <Dialog open={!!card} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Visualizar Tarefa</DialogTitle>
+          <DialogClose />
+        </DialogHeader>
+        <div className={cn("rounded-xl border p-4", cardColor.class)}>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+            {card.titulo}
+          </h2>
+
+          {card.descricao && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                Descrição
+              </p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                {card.descricao}
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2 pt-3 border-t border-gray-300/40 dark:border-gray-600/40">
+            <div>
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Prioridade</p>
+              <span className={cn("text-xs px-2 py-1 rounded-full font-medium inline-block mt-1", priority.class)}>
+                {priority.label}
+              </span>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Categoria</p>
+              <span className={cn("text-xs px-2 py-1 rounded-full font-medium inline-block mt-1", category.class)}>
+                {category.label}
+              </span>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Status</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 capitalize">
+                {card.coluna.replace(/_/g, " ")}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Criado em</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                {new Date(card.data_criacao).toLocaleDateString("pt-BR")}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Atualizado em</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                {new Date(card.data_atualizacao).toLocaleDateString("pt-BR")}
+              </p>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 interface KanbanCardItemProps {
   card: KanbanCard;
+  dragCard: KanbanCard | null;
   onEdit: (card: KanbanCard) => void;
   onDelete: (id: string) => void;
   onDragStart: (card: KanbanCard) => void;
   onDragEnd: () => void;
+  onDropOnCard?: (draggedCardId: string, targetCardId: string) => void;
   editingId: string | null;
-  onSaveEdit: (card: KanbanCard, data: { titulo: string; descricao: string; cor: string; prioridade: string }) => void;
+  onSaveEdit: (card: KanbanCard, data: { titulo: string; descricao: string; cor: string; prioridade: string; categoria: string }) => Promise<void>;
   onCancelEdit: () => void;
+  onView: (card: KanbanCard) => void;
   saving: boolean;
 }
 
 function KanbanCardItem({
   card,
+  dragCard,
   onEdit,
   onDelete,
   onDragStart,
   onDragEnd,
+  onDropOnCard,
   editingId,
   onSaveEdit,
   onCancelEdit,
+  onView,
   saving,
 }: KanbanCardItemProps) {
+  const isDraggingRef = useRef(false);
   const isEditing = editingId === card.id;
   const priority = PRIORITY_LABELS[card.prioridade] ?? PRIORITY_LABELS.media;
+  const category = CATEGORY_LABELS[card.categoria] ?? CATEGORY_LABELS.desenvolvimento;
+
+  const handleDragStart = (card: KanbanCard) => {
+    isDraggingRef.current = true;
+    onDragStart(card);
+  };
+
+  const handleDragEnd = () => {
+    isDraggingRef.current = false;
+    onDragEnd();
+  };
+
+  const handleCardClick = () => {
+    if (!isDraggingRef.current) {
+      onView(card);
+    }
+  };
+
+  const handleDragOverCard = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDropOnCard = (e: React.DragEvent, targetCardId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onDropOnCard && dragCard) {
+      onDropOnCard(dragCard.id, targetCardId);
+    }
+  };
 
   if (isEditing) {
+    const handleSave = async (data: { titulo: string; descricao: string; cor: string; prioridade: string; categoria: string }) => {
+      await onSaveEdit(card, data);
+      onCancelEdit();
+    };
+
     return (
       <CardForm
         initial={card}
-        onSave={(data) => onSaveEdit(card, data)}
+        onSave={handleSave}
         onCancel={onCancelEdit}
         saving={saving}
       />
@@ -205,8 +361,10 @@ function KanbanCardItem({
   return (
     <div
       draggable
-      onDragStart={() => onDragStart(card)}
-      onDragEnd={onDragEnd}
+      onDragStart={() => handleDragStart(card)}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOverCard}
+      onDrop={(e) => handleDropOnCard(e, card.id)}
       className={cn(
         "rounded-xl border p-3 cursor-grab active:cursor-grabbing group",
         "shadow-sm hover:shadow-md transition-all duration-200",
@@ -216,8 +374,8 @@ function KanbanCardItem({
       <div className="flex items-start justify-between gap-1">
         <div className="flex items-start gap-1.5 flex-1 min-w-0">
           <GripVertical className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 dark:text-white leading-snug">
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={handleCardClick}>
+            <p className="text-sm font-medium text-gray-900 dark:text-white leading-snug hover:underline">
               {card.titulo}
             </p>
             {card.descricao && (
@@ -228,6 +386,13 @@ function KanbanCardItem({
           </div>
         </div>
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <button
+            onClick={() => onView(card)}
+            className="p-1 rounded-md text-gray-400 hover:text-cyan-600 hover:bg-white/60 dark:hover:bg-gray-700/60 transition-colors"
+            title="Visualizar"
+          >
+            <Eye className="w-3 h-3" />
+          </button>
           <button
             onClick={() => onEdit(card)}
             className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-white/60 dark:hover:bg-gray-700/60 transition-colors"
@@ -242,9 +407,12 @@ function KanbanCardItem({
           </button>
         </div>
       </div>
-      <div className="mt-2">
-        <span className={cn("text-xs px-1.5 py-0.5 rounded-full font-medium", priority.class)}>
+      <div className="mt-2 space-y-1.5">
+        <span className={cn("text-xs px-1.5 py-0.5 rounded-full font-medium inline-block", priority.class)}>
           {priority.label}
+        </span>
+        <span className={cn("text-xs px-1.5 py-0.5 rounded-full font-medium inline-block ml-1.5", category.class)}>
+          {category.label}
         </span>
       </div>
     </div>
@@ -254,34 +422,40 @@ function KanbanCardItem({
 interface ColumnProps {
   column: KanbanColumn;
   cards: KanbanCard[];
-  onAddCard: (coluna: string, data: { titulo: string; descricao: string; cor: string; prioridade: string }) => void;
-  onEditCard: (card: KanbanCard, data: { titulo: string; descricao: string; cor: string; prioridade: string }) => void;
+  dragCard: KanbanCard | null;
+  onAddCard: (coluna: string, data: { titulo: string; descricao: string; cor: string; prioridade: string; categoria: string }) => void;
+  onEditCard: (card: KanbanCard, data: { titulo: string; descricao: string; cor: string; prioridade: string; categoria: string }) => void;
   onDeleteCard: (id: string) => void;
   onDragStart: (card: KanbanCard) => void;
   onDragEnd: () => void;
   onDrop: (coluna: string) => void;
+  onReorderCards: (draggedCardId: string, targetCardId: string) => void;
   isDragOver: boolean;
   editingId: string | null;
   addingInCol: string | null;
   setAddingInCol: (col: string | null) => void;
   setEditingId: (id: string | null) => void;
+  setViewingCard: (card: KanbanCard | null) => void;
   saving: boolean;
 }
 
 function Column({
   column,
   cards,
+  dragCard,
   onAddCard,
   onEditCard,
   onDeleteCard,
   onDragStart,
   onDragEnd,
   onDrop,
+  onReorderCards,
   isDragOver,
   editingId,
   addingInCol,
   setAddingInCol,
   setEditingId,
+  setViewingCard,
   saving,
 }: ColumnProps) {
   const Icon = column.icon;
@@ -290,7 +464,7 @@ function Column({
   return (
     <div
       className={cn(
-        "flex flex-col min-w-[260px] w-[260px] bg-gray-100 dark:bg-gray-900 rounded-2xl border-2 transition-colors duration-200",
+        "flex flex-col flex-1 min-w-[280px] bg-gray-100 dark:bg-gray-900 rounded-2xl border-2 transition-colors duration-200",
         isDragOver
           ? "border-blue-400 bg-blue-50 dark:bg-blue-950/40"
           : "border-transparent"
@@ -319,13 +493,16 @@ function Column({
           <KanbanCardItem
             key={card.id}
             card={card}
+            dragCard={dragCard}
             onEdit={(c) => setEditingId(c.id)}
             onDelete={onDeleteCard}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
+            onDropOnCard={onReorderCards}
             editingId={editingId}
             onSaveEdit={onEditCard}
             onCancelEdit={() => setEditingId(null)}
+            onView={setViewingCard}
             saving={saving}
           />
         ))}
@@ -362,8 +539,8 @@ function Column({
 interface KanbanBoardProps {
   projetoId: string;
   cards: KanbanCard[];
-  onAdd: (coluna: string, data: { titulo: string; descricao: string; cor: string; prioridade: string }) => Promise<void>;
-  onEdit: (card: KanbanCard, data: { titulo: string; descricao: string; cor: string; prioridade: string }) => Promise<void>;
+  onAdd: (coluna: string, data: { titulo: string; descricao: string; cor: string; prioridade: string; categoria: string }) => Promise<void>;
+  onEdit: (card: KanbanCard, data: { titulo: string; descricao: string; cor: string; prioridade: string; categoria: string }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onMove: (cardId: string, newColuna: string) => Promise<void>;
   saving: boolean;
@@ -374,6 +551,7 @@ export function KanbanBoard({ cards, onAdd, onEdit, onDelete, onMove, saving }: 
   const [addingInCol, setAddingInCol] = useState<string | null>(null);
   const [dragCard, setDragCard] = useState<KanbanCard | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  const [viewingCard, setViewingCard] = useState<KanbanCard | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const cardsByColumn = (colId: string) =>
@@ -387,36 +565,71 @@ export function KanbanBoard({ cards, onAdd, onEdit, onDelete, onMove, saving }: 
     setDragOverCol(null);
   };
 
+  const handleReorderCards = async (draggedCardId: string, targetCardId: string) => {
+    if (draggedCardId === targetCardId || !dragCard) return;
+
+    const draggedCard = cards.find((c) => c.id === draggedCardId);
+    const targetCard = cards.find((c) => c.id === targetCardId);
+
+    if (!draggedCard || !targetCard || draggedCard.coluna !== targetCard.coluna) return;
+
+    try {
+      // Swap positions
+      const tempPos = draggedCard.posicao;
+      const projectId = draggedCard.projeto_id;
+
+      await fetch(`/api/projetos/${projectId}/kanban/${draggedCardId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ posicao: targetCard.posicao }),
+      });
+
+      await fetch(`/api/projetos/${projectId}/kanban/${targetCardId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ posicao: tempPos }),
+      });
+    } catch (err) {
+      console.error("Error reordering cards:", err);
+    }
+  };
+
   return (
-    <div
-      ref={scrollRef}
-      className="flex gap-4 overflow-x-auto pb-4 min-h-0"
-    >
-      {COLUMNS.map((col) => (
-        <Column
-          key={col.id}
-          column={col}
-          cards={cardsByColumn(col.id)}
-          onAddCard={onAdd}
-          onEditCard={onEdit}
-          onDeleteCard={onDelete}
-          onDragStart={(card) => {
-            setDragCard(card);
-            setDragOverCol(card.coluna);
-          }}
-          onDragEnd={() => {
-            setDragCard(null);
-            setDragOverCol(null);
-          }}
-          onDrop={handleDrop}
-          isDragOver={dragOverCol === col.id && dragCard?.coluna !== col.id}
-          editingId={editingId}
-          addingInCol={addingInCol}
-          setAddingInCol={setAddingInCol}
-          setEditingId={setEditingId}
-          saving={saving}
-        />
-      ))}
-    </div>
+    <>
+      <CardViewModal card={viewingCard} onClose={() => setViewingCard(null)} />
+      <div
+        ref={scrollRef}
+        className="flex gap-4 pb-4 min-h-0 w-full"
+      >
+        {COLUMNS.map((col) => (
+          <Column
+            key={col.id}
+            column={col}
+            cards={cardsByColumn(col.id)}
+            dragCard={dragCard}
+            onAddCard={onAdd}
+            onEditCard={onEdit}
+            onDeleteCard={onDelete}
+            onDragStart={(card) => {
+              setDragCard(card);
+              setDragOverCol(card.coluna);
+            }}
+            onDragEnd={() => {
+              setDragCard(null);
+              setDragOverCol(null);
+            }}
+            onDrop={handleDrop}
+            onReorderCards={handleReorderCards}
+            isDragOver={dragOverCol === col.id && dragCard?.coluna !== col.id}
+            editingId={editingId}
+            addingInCol={addingInCol}
+            setAddingInCol={setAddingInCol}
+            setEditingId={setEditingId}
+            setViewingCard={setViewingCard}
+            saving={saving}
+          />
+        ))}
+      </div>
+    </>
   );
 }

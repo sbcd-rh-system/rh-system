@@ -82,7 +82,7 @@ export default function KanbanPage() {
 
   const handleAdd = async (
     coluna: string,
-    data: { titulo: string; descricao: string; cor: string; prioridade: string }
+    data: { titulo: string; descricao: string; cor: string; prioridade: string; categoria: string }
   ) => {
     setSaving(true);
     try {
@@ -103,7 +103,7 @@ export default function KanbanPage() {
 
   const handleEdit = async (
     card: KanbanCard,
-    data: { titulo: string; descricao: string; cor: string; prioridade: string }
+    data: { titulo: string; descricao: string; cor: string; prioridade: string; categoria: string }
   ) => {
     setSaving(true);
     try {
