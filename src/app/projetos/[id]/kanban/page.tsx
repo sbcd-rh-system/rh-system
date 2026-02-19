@@ -249,6 +249,7 @@ export default function KanbanPage() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onMove={handleMove}
+          onUpdateCards={setCards}
           saving={saving}
         />
       )}

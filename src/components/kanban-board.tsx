@@ -285,6 +285,7 @@ interface KanbanCardItemProps {
   onDelete: (id: string) => void;
   onDragStart: (card: KanbanCard) => void;
   onDragEnd: () => void;
+  onDragOverCard?: (cardId: string) => void;
   onDropOnCard?: (draggedCardId: string, targetCardId: string) => void;
   editingId: string | null;
   onSaveEdit: (card: KanbanCard, data: { titulo: string; descricao: string; cor: string; prioridade: string; categoria: string }) => Promise<void>;
@@ -300,6 +301,7 @@ function KanbanCardItem({
   onDelete,
   onDragStart,
   onDragEnd,
+  onDragOverCard,
   onDropOnCard,
   editingId,
   onSaveEdit,
@@ -332,6 +334,9 @@ function KanbanCardItem({
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
+    if (onDragOverCard) {
+      onDragOverCard(card.id);
+    }
   };
 
   const handleDropOnCard = (e: React.DragEvent, targetCardId: string) => {
@@ -429,6 +434,7 @@ interface ColumnProps {
   onDragStart: (card: KanbanCard) => void;
   onDragEnd: () => void;
   onDrop: (coluna: string) => void;
+  onDragOverCard: (cardId: string) => void;
   onReorderCards: (draggedCardId: string, targetCardId: string) => void;
   isDragOver: boolean;
   editingId: string | null;
@@ -449,6 +455,7 @@ function Column({
   onDragStart,
   onDragEnd,
   onDrop,
+  onDragOverCard,
   onReorderCards,
   isDragOver,
   editingId,
@@ -498,6 +505,7 @@ function Column({
             onDelete={onDeleteCard}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
+            onDragOverCard={onDragOverCard}
             onDropOnCard={onReorderCards}
             editingId={editingId}
             onSaveEdit={onEditCard}
@@ -543,52 +551,96 @@ interface KanbanBoardProps {
   onEdit: (card: KanbanCard, data: { titulo: string; descricao: string; cor: string; prioridade: string; categoria: string }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onMove: (cardId: string, newColuna: string) => Promise<void>;
+  onUpdateCards?: (newCards: KanbanCard[]) => void;
   saving: boolean;
 }
 
-export function KanbanBoard({ cards, onAdd, onEdit, onDelete, onMove, saving }: KanbanBoardProps) {
+export function KanbanBoard({ cards, onAdd, onEdit, onDelete, onMove, onUpdateCards, saving }: KanbanBoardProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [addingInCol, setAddingInCol] = useState<string | null>(null);
   const [dragCard, setDragCard] = useState<KanbanCard | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [viewingCard, setViewingCard] = useState<KanbanCard | null>(null);
+  const [dragOverCardId, setDragOverCardId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const cardsByColumn = (colId: string) =>
     cards.filter((c) => c.coluna === colId).sort((a, b) => a.posicao - b.posicao);
 
   const handleDrop = async (coluna: string) => {
-    if (dragCard && dragCard.coluna !== coluna) {
+    if (!dragCard) {
+      setDragCard(null);
+      setDragOverCol(null);
+      setDragOverCardId(null);
+      return;
+    }
+
+    // Se foi solto no mesmo card, não faz nada
+    if (dragCard.id === dragOverCardId) {
+      setDragCard(null);
+      setDragOverCol(null);
+      setDragOverCardId(null);
+      return;
+    }
+
+    // Se foi solto em coluna diferente
+    if (dragCard.coluna !== coluna) {
       await onMove(dragCard.id, coluna);
     }
+    // Se foi solto em card diferente na mesma coluna, reordena
+    else if (dragOverCardId) {
+      await handleReorderCards(dragCard.id, dragOverCardId);
+    }
+
     setDragCard(null);
     setDragOverCol(null);
+    setDragOverCardId(null);
   };
 
   const handleReorderCards = async (draggedCardId: string, targetCardId: string) => {
-    if (draggedCardId === targetCardId || !dragCard) return;
+    if (draggedCardId === targetCardId || !dragCard) {
+      return;
+    }
 
     const draggedCard = cards.find((c) => c.id === draggedCardId);
     const targetCard = cards.find((c) => c.id === targetCardId);
 
-    if (!draggedCard || !targetCard || draggedCard.coluna !== targetCard.coluna) return;
+    if (!draggedCard || !targetCard || draggedCard.coluna !== targetCard.coluna) {
+      return;
+    }
 
     try {
-      // Swap positions
+      // Swap positions locally first (optimistic update)
       const tempPos = draggedCard.posicao;
+      const updatedCards = cards.map((c) => {
+        if (c.id === draggedCardId) {
+          return { ...c, posicao: targetCard.posicao };
+        }
+        if (c.id === targetCardId) {
+          return { ...c, posicao: tempPos };
+        }
+        return c;
+      });
+
+      // Update UI immediately
+      if (onUpdateCards) {
+        onUpdateCards(updatedCards);
+      }
+
+      // Update server in background
       const projectId = draggedCard.projeto_id;
 
-      await fetch(`/api/projetos/${projectId}/kanban/${draggedCardId}`, {
+      fetch(`/api/projetos/${projectId}/kanban/${draggedCardId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ posicao: targetCard.posicao }),
-      });
+      }).catch((err) => console.error("Error updating card 1:", err));
 
-      await fetch(`/api/projetos/${projectId}/kanban/${targetCardId}`, {
+      fetch(`/api/projetos/${projectId}/kanban/${targetCardId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ posicao: tempPos }),
-      });
+      }).catch((err) => console.error("Error updating card 2:", err));
     } catch (err) {
       console.error("Error reordering cards:", err);
     }
@@ -619,6 +671,7 @@ export function KanbanBoard({ cards, onAdd, onEdit, onDelete, onMove, saving }: 
               setDragOverCol(null);
             }}
             onDrop={handleDrop}
+            onDragOverCard={setDragOverCardId}
             onReorderCards={handleReorderCards}
             isDragOver={dragOverCol === col.id && dragCard?.coluna !== col.id}
             editingId={editingId}
