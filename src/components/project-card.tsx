@@ -12,7 +12,7 @@ import {
   Trash2,
   Clock,
   Tag,
-  Kanban,
+  Columns3,
   Github,
   Loader2,
 } from "lucide-react";
@@ -46,6 +46,9 @@ export function ProjectCard({
 }: ProjectCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [hoverAcessar, setHoverAcessar] = useState(false);
+  const [hoverKanban, setHoverKanban] = useState(false);
+  const [hoverEditar, setHoverEditar] = useState(false);
   const router = useRouter();
 
   const icon = SECTOR_ICONS[projeto.setor ?? ""] ?? "📁";
@@ -241,37 +244,50 @@ export function ProjectCard({
       </div>
 
       {/* Footer actions */}
-      <div className="px-5 pb-5 flex items-center gap-2">
+      <div className="px-5 pb-5 flex flex-col gap-2 w-full">
         {projeto.url_base ? (
           <a
             href={projeto.url_base}
             target="_blank"
             rel="noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
+            onMouseEnter={() => setHoverAcessar(true)}
+            onMouseLeave={() => setHoverAcessar(false)}
+            className="relative inline-flex w-full items-center justify-center p-0.5 overflow-hidden text-sm font-medium rounded-lg bg-gradient-to-br from-green-400 to-blue-600 focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800"
           >
-            <ExternalLink className="w-3.5 h-3.5" />
-            Acessar
+            <span className={cn("relative w-full flex items-center justify-center gap-2 px-4 py-2.5 transition-all ease-in duration-75 rounded-md", hoverAcessar ? "bg-transparent" : "bg-white dark:bg-gray-800")}>
+              <ExternalLink className="w-3.5 h-3.5" />
+              Acessar
+            </span>
           </a>
         ) : (
           <button
             disabled
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-400 text-sm font-medium rounded-xl cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed"
           >
             Sem URL
           </button>
         )}
         <button
           onClick={() => router.push(`/projetos/${projeto.id}/kanban`)}
-          title="Ver Kanban"
-          className="px-3 py-2 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-700 hover:text-purple-600 text-sm font-medium rounded-xl transition-colors"
+          onMouseEnter={() => setHoverKanban(true)}
+          onMouseLeave={() => setHoverKanban(false)}
+          className="relative inline-flex w-full items-center justify-center p-0.5 overflow-hidden text-sm font-medium rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800"
         >
-          <Kanban className="w-4 h-4" />
+          <span className={cn("relative w-full flex items-center justify-center gap-2 px-4 py-2.5 transition-all ease-in duration-75 rounded-md", hoverKanban ? "bg-transparent" : "bg-white dark:bg-gray-800")}>
+            <Columns3 className="w-4 h-4" />
+            Kanban
+          </span>
         </button>
         <button
           onClick={() => onEdit(projeto)}
-          className="px-4 py-2 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium rounded-xl transition-colors"
+          onMouseEnter={() => setHoverEditar(true)}
+          onMouseLeave={() => setHoverEditar(false)}
+          className="relative inline-flex w-full items-center justify-center p-0.5 overflow-hidden text-sm font-medium rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 focus:ring-4 focus:outline-none focus:ring-purple-200 dark:focus:ring-purple-800"
         >
-          Editar
+          <span className={cn("relative w-full flex items-center justify-center gap-2 px-4 py-2.5 transition-all ease-in duration-75 rounded-md", hoverEditar ? "bg-transparent" : "bg-white dark:bg-gray-800")}>
+            <Edit2 className="w-4 h-4" />
+            Editar
+          </span>
         </button>
       </div>
     </div>

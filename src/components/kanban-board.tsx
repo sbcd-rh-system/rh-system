@@ -334,16 +334,32 @@ function KanbanCardItem({
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
-    if (onDragOverCard) {
+    // Ignora quando o card passa sobre si mesmo
+    if (onDragOverCard && dragCard?.id !== card.id) {
       onDragOverCard(card.id);
+    }
+  };
+
+  const handleDragLeaveCard = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only reset if we're actually leaving the card element
+    if ((e.relatedTarget as HTMLElement)?.closest('[draggable="true"]') === null) {
+      if (onDragOverCard) {
+        onDragOverCard('');
+      }
     }
   };
 
   const handleDropOnCard = (e: React.DragEvent, targetCardId: string) => {
     e.preventDefault();
-    e.stopPropagation();
-    if (onDropOnCard && dragCard) {
-      onDropOnCard(dragCard.id, targetCardId);
+    // Só bloqueia propagação se o drag é dentro da mesma coluna (reordenação)
+    // Se for de coluna diferente, deixa o evento chegar até a coluna pai (movimento)
+    if (dragCard && dragCard.coluna === card.coluna) {
+      e.stopPropagation();
+      if (onDropOnCard) {
+        onDropOnCard(dragCard.id, targetCardId);
+      }
     }
   };
 
@@ -434,6 +450,7 @@ interface ColumnProps {
   onDragStart: (card: KanbanCard) => void;
   onDragEnd: () => void;
   onDrop: (coluna: string) => void;
+  onDragOver: (coluna: string) => void;
   onDragOverCard: (cardId: string) => void;
   onReorderCards: (draggedCardId: string, targetCardId: string) => void;
   isDragOver: boolean;
@@ -455,6 +472,7 @@ function Column({
   onDragStart,
   onDragEnd,
   onDrop,
+  onDragOver,
   onDragOverCard,
   onReorderCards,
   isDragOver,
@@ -476,7 +494,11 @@ function Column({
           ? "border-blue-400 bg-blue-50 dark:bg-blue-950/40"
           : "border-transparent"
       )}
-      onDragOver={(e) => e.preventDefault()}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onDragOver(column.id);
+      }}
       onDrop={() => onDrop(column.id)}
     >
       {/* Column header */}
@@ -495,7 +517,18 @@ function Column({
       </div>
 
       {/* Cards */}
-      <div className="flex-1 px-3 pb-3 space-y-2 overflow-y-auto max-h-[calc(100vh-280px)] min-h-[60px]">
+      <div
+        className="flex-1 px-3 pb-3 space-y-2 overflow-y-auto max-h-[calc(100vh-280px)] min-h-[60px]"
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onDrop(column.id);
+        }}
+      >
         {cards.map((card) => (
           <KanbanCardItem
             key={card.id}
@@ -609,41 +642,48 @@ export function KanbanBoard({ cards, onAdd, onEdit, onDelete, onMove, onUpdateCa
       return;
     }
 
-    try {
-      // Swap positions locally first (optimistic update)
-      const tempPos = draggedCard.posicao;
-      const updatedCards = cards.map((c) => {
-        if (c.id === draggedCardId) {
-          return { ...c, posicao: targetCard.posicao };
-        }
-        if (c.id === targetCardId) {
-          return { ...c, posicao: tempPos };
-        }
-        return c;
-      });
+    // Pega todos os cards da coluna ordenados por posição
+    const colCards = cards
+      .filter((c) => c.coluna === draggedCard.coluna)
+      .sort((a, b) => a.posicao - b.posicao);
 
-      // Update UI immediately
-      if (onUpdateCards) {
-        onUpdateCards(updatedCards);
-      }
+    // Detecta direção: de cima pra baixo ou de baixo pra cima
+    const draggedIndex = colCards.findIndex((c) => c.id === draggedCardId);
+    const targetIndex2 = colCards.findIndex((c) => c.id === targetCardId);
+    const movingDown = draggedIndex < targetIndex2;
 
-      // Update server in background
-      const projectId = draggedCard.projeto_id;
+    // Remove o card arrastado
+    const withoutDragged = colCards.filter((c) => c.id !== draggedCardId);
+    const targetIndex = withoutDragged.findIndex((c) => c.id === targetCardId);
 
-      fetch(`/api/projetos/${projectId}/kanban/${draggedCardId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ posicao: targetCard.posicao }),
-      }).catch((err) => console.error("Error updating card 1:", err));
+    // Insere depois se movendo pra baixo, antes se movendo pra cima
+    withoutDragged.splice(movingDown ? targetIndex + 1 : targetIndex, 0, draggedCard);
 
-      fetch(`/api/projetos/${projectId}/kanban/${targetCardId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ posicao: tempPos }),
-      }).catch((err) => console.error("Error updating card 2:", err));
-    } catch (err) {
-      console.error("Error reordering cards:", err);
+    // Reatribui posições sequenciais
+    const reordered = withoutDragged.map((c, i) => ({ ...c, posicao: i }));
+
+    // Atualiza UI imediatamente (optimistic update)
+    const updatedCards = cards.map((c) => {
+      const reorderedCard = reordered.find((r) => r.id === c.id);
+      return reorderedCard ?? c;
+    });
+
+    if (onUpdateCards) {
+      onUpdateCards(updatedCards);
     }
+
+    // Atualiza servidor em background apenas para os que mudaram de posição
+    const projectId = draggedCard.projeto_id;
+    reordered.forEach((c) => {
+      const original = cards.find((orig) => orig.id === c.id);
+      if (original && original.posicao !== c.posicao) {
+        fetch(`/api/projetos/${projectId}/kanban/${c.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ posicao: c.posicao }),
+        }).catch((err) => console.error("Error updating card position:", err));
+      }
+    });
   };
 
   return (
@@ -671,6 +711,7 @@ export function KanbanBoard({ cards, onAdd, onEdit, onDelete, onMove, onUpdateCa
               setDragOverCol(null);
             }}
             onDrop={handleDrop}
+            onDragOver={setDragOverCol}
             onDragOverCard={setDragOverCardId}
             onReorderCards={handleReorderCards}
             isDragOver={dragOverCol === col.id && dragCard?.coluna !== col.id}
