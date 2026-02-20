@@ -12,6 +12,7 @@ import {
   Lightbulb,
   Loader2,
   Eye,
+  FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -65,6 +66,13 @@ const COLUMNS: KanbanColumn[] = [
     color: "bg-yellow-500",
     icon: Loader2,
     description: "Trabalho em progresso",
+  },
+  {
+    id: "testes",
+    label: "Testes",
+    color: "bg-orange-500",
+    icon: FlaskConical,
+    description: "Em fase de testes e validação",
   },
   {
     id: "concluido",
