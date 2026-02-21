@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 function SkeletonKanban() {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 animate-pulse">
-      {Array.from({ length: 4 }).map((_, i) => (
+      {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
           className="min-w-[260px] w-[260px] bg-gray-100 dark:bg-gray-900 rounded-2xl p-4 space-y-3"
@@ -227,6 +227,7 @@ export default function KanbanPage() {
               { label: "Ideias", value: cards.filter((c) => c.coluna === "ideias").length, color: "text-purple-600" },
               { label: "A Fazer", value: cards.filter((c) => c.coluna === "a_fazer").length, color: "text-blue-600" },
               { label: "Em Andamento", value: cards.filter((c) => c.coluna === "em_andamento").length, color: "text-yellow-600" },
+              { label: "Testes", value: cards.filter((c) => c.coluna === "testes").length, color: "text-orange-600" },
               { label: "Concluído", value: concluidoCards, color: "text-green-600" },
             ].map((s) => (
               <div key={s.label} className="flex items-center gap-1.5 text-sm">
